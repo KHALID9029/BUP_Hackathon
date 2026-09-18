@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +14,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 1000                   # 3 directives ≈ 350 tokens; headroom avoids truncation → retry → latency
     LLM_CONCURRENCY: int = 20                    # semaphore around the OpenRouter call
     PORT: int = 8000
+    FRONTEND_DIST: str = str(Path(__file__).resolve().parent.parent / "frontend" / "dist")   # built UI; skipped if absent
 
 
 settings = Settings()

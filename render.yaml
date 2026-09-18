@@ -1,0 +1,12 @@
+# Render Blueprint: one Docker web service serving the API and the web UI.
+services:
+  - type: web
+    name: gridwise-llm
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter          # always-on; the free plan sleeps and would fail the 60s health readiness check
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false        # entered in the Render dashboard, never committed

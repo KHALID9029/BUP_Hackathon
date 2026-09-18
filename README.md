@@ -42,6 +42,29 @@ Run the offline test suite (guardrails, optimizer, API contract — no network c
 uv run pytest
 ```
 
+## Web UI
+
+The same service also serves a small web UI at `/` for visualizing a run. It's optional and has no
+effect on the API: only `GET /` and `/assets/*` are added, and if the built files are missing
+nothing is mounted at all. On the page you can:
+
+- load any public sample case, or edit the operator notes, battery and hourly data;
+- see each note's interpretation (directive type, hours, value, and whether it matches the sample's
+  expected interpretation);
+- see the 24-hour schedule chart, with directive hours shaded, and the battery state-of-charge chart;
+- check the plan against every schedule rule, recomputed independently in the browser.
+
+The Docker image builds the UI automatically. To build it for a local (non-Docker) run:
+
+```bash
+cd frontend && npm ci && npm run build     # writes frontend/dist, served by FastAPI at /
+```
+
+For UI development with hot reload, run the API on port 8000 and, in `frontend/`, `npm run dev`
+(Vite proxies `/health` and `/optimize-energy` to `http://localhost:8000`).
+
+Stack: React + TypeScript (Vite), Tailwind CSS, Recharts. Source in `frontend/src/`.
+
 ## Environment variables
 
 | Variable | Purpose |
@@ -54,6 +77,7 @@ uv run pytest
 | `LLM_MAX_TOKENS` | Output token cap; headroom avoids truncation-triggered retries. |
 | `LLM_CONCURRENCY` | `asyncio.Semaphore` around the LLM call, to stay under the OpenRouter key's rate limit under burst load. |
 | `PORT` | HTTP port (`uvicorn` / Docker `CMD` read this). |
+| `FRONTEND_DIST` | Optional. Directory of the built web UI (default `frontend/dist`; set in the Docker image). |
 
 ## Architecture
 
@@ -115,12 +139,29 @@ docker push <dockerhub-user>/gridwise-llm:v1
 docker run --rm -p 8000:8000 -e OPENROUTER_API_KEY=... <dockerhub-user>/gridwise-llm:v1@sha256:<digest>
 ```
 
+The Dockerfile is multi-stage: a Node stage builds the web UI, and the final Python image contains
+only the API plus the static UI files (no Node runtime). Then open `http://localhost:8000/` for the
+UI.
+
 Verified: the image's `/health` returns 200 even when run **without** `OPENROUTER_API_KEY` (the
 Docker fallback / health-readiness check).
 
 Bind `0.0.0.0` and read `PORT` from the environment — most PaaS providers inject their own port.
 Prefer an always-on instance over a free tier that spins down (Render free / Fly auto-stop); the
 service must answer `/health` within 60s of boot with zero warm-up.
+
+## Deploy (Render)
+
+`render.yaml` is a Render Blueprint for this repo: a single Docker web service on an always-on
+plan, with its health check on `/health`.
+
+1. Push the repo to GitHub.
+2. In Render: **New → Blueprint** → select the repo.
+3. Enter `OPENROUTER_API_KEY` when prompted (it's `sync: false`, so it's never stored in the repo).
+4. After the deploy finishes, the public URL serves the UI at `/` and the API at `/health` and
+   `/optimize-energy`.
+
+Render injects `PORT`, and the container's `CMD` already reads it.
 
 ## Known limitations
 
@@ -154,6 +195,7 @@ service must answer `/health` within 60s of boot with zero warm-up.
   (fallbacks, in that order) — see "Model choice" above for the comparison and rationale.
 - [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/), [Pydantic](https://docs.pydantic.dev/), [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 - [SciPy](https://scipy.org/) (`linprog`, HiGHS solver), [NumPy](https://numpy.org/).
+- Web UI: [React](https://react.dev/), [Vite](https://vite.dev/), [Tailwind CSS](https://tailwindcss.com/), [Recharts](https://recharts.org/).
 - Docker + a container registry (Docker Hub/GHCR) + a hosting provider for the public deployment.
 - Claude Code (Anthropic) was used as an AI coding assistant for scaffolding; the pipeline
   architecture, guardrail rules, LP formulation and validation logic are the team's own.

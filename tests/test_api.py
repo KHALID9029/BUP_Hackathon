@@ -111,3 +111,17 @@ def test_response_never_contains_api_key(client, sample_input, monkeypatch):
     ])])
     resp = client.post("/optimize-energy", json=sample_input)
     assert "sk-or-v1-secret-should-not-leak" not in resp.text
+
+
+def test_ui_does_not_change_api_routes(client):
+    # The optional web UI must never shadow or alter the graded endpoints.
+    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/optimize-energy").status_code == 405
+    assert client.post("/", json={}).status_code in (404, 405)
+
+
+@pytest.mark.skipif(not (main_module._ui / "index.html").is_file(), reason="frontend not built")
+def test_ui_served_when_built(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]

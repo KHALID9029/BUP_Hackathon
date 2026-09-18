@@ -1,9 +1,12 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from .config import settings
 from .schemas import OptimizeRequest, OptimizeResponse
 from .state import GraphState
 from .graph import build_graph
@@ -60,3 +63,14 @@ async def optimize_energy(req: OptimizeRequest):
         peak_grid_kwh=out["peak_grid_kwh"],
         plan_summary=out["plan_summary"],
     )
+
+
+# Optional web UI, registered after the API routes. Only `/` and `/assets/*` are added, so the
+# status behaviour of /health and /optimize-energy is unchanged; if the build is absent, nothing is mounted.
+_ui = Path(settings.FRONTEND_DIST)
+if (_ui / "index.html").is_file():
+    app.mount("/assets", StaticFiles(directory=_ui / "assets", check_dir=False), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    async def ui():
+        return FileResponse(_ui / "index.html")
