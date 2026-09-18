@@ -10,9 +10,11 @@ RUN cd frontend && npm run build
 # --- Stage 2: API service ---
 FROM python:3.12-slim
 WORKDIR /srv
+# Install dependencies against a stub package first, so this large layer is cached (and not
+# re-uploaded) when only the code changes; the real code is copied afterwards.
 COPY pyproject.toml ./
+RUN mkdir app && touch app/__init__.py && pip install --no-cache-dir . && rm -rf app
 COPY app ./app
-RUN pip install --no-cache-dir .
 COPY --from=ui /build/frontend/dist ./frontend/dist
 ENV PORT=8000 \
     FRONTEND_DIST=/srv/frontend/dist

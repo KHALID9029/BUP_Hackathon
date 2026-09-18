@@ -54,7 +54,7 @@ async def _bad_request(_: Request, exc: RequestValidationError):
     return JSONResponse(status_code=400, content={"error": "invalid_request", "detail": errors})
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])   # HEAD: uptime monitors / load balancers probe with it
 async def health():
     return {"status": "ok"}
 

@@ -135,3 +135,8 @@ def test_sloppy_paths_are_normalized(client, sample_input):
     for path in ("http://testserver//optimize-energy", "/optimize-energy/"):
         resp = client.post(path, json=sample_input, follow_redirects=False)
         assert resp.status_code == 200, path
+
+
+def test_health_answers_head(client):
+    # Uptime monitors (e.g. UptimeRobot) probe with HEAD; a 405 there is reported as downtime.
+    assert client.head("/health").status_code == 200
