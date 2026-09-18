@@ -152,8 +152,10 @@ service must answer `/health` within 60s of boot with zero warm-up.
 
 ## Deploy (Render)
 
-`render.yaml` is a Render Blueprint for this repo: a single Docker web service on an always-on
-plan, with its health check on `/health`.
+`render.yaml` is a Render Blueprint for this repo: a single Docker web service with its health
+check on `/health`. It uses the free plan, which sleeps after 15 minutes idle, so an external uptime
+monitor pings `/health` every 5 minutes to keep it awake. For the judging window, switch the
+service to an always-on instance type (Settings → Instance Type).
 
 1. Push the repo to GitHub.
 2. In Render: **New → Blueprint** → select the repo.
