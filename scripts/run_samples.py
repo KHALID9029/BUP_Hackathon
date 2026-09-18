@@ -29,7 +29,7 @@ def note_matches(got: dict, exp: dict) -> bool:
 
 
 def main() -> int:
-    base_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
+    base_url = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000").rstrip("/")
     cases = json.loads(SAMPLES.read_text())["cases"]
 
     ok = 0

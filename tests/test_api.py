@@ -125,3 +125,13 @@ def test_ui_served_when_built(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
+
+
+def test_sloppy_paths_are_normalized(client, sample_input):
+    # A judge joining "https://host/" + "/optimize-energy" must still reach the endpoint, not 404/307.
+    install_fake_graph([LLMInterpretation(directives=[])])
+    assert client.get("http://testserver//health").json() == {"status": "ok"}
+    assert client.get("/health/").json() == {"status": "ok"}
+    for path in ("http://testserver//optimize-energy", "/optimize-energy/"):
+        resp = client.post(path, json=sample_input, follow_redirects=False)
+        assert resp.status_code == 200, path

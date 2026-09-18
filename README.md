@@ -9,6 +9,12 @@ Operator notes + energy data → LLM interpreter → deterministic guardrails �
 Built as a [LangGraph](https://github.com/langchain-ai/langgraph) `StateGraph` (5 nodes, one conditional
 retry edge) served by FastAPI.
 
+**Live deployment:** https://gridwise-llm-2y8l.onrender.com
+
+- `GET https://gridwise-llm-2y8l.onrender.com/health`
+- `POST https://gridwise-llm-2y8l.onrender.com/optimize-energy`
+- Web UI: https://gridwise-llm-2y8l.onrender.com/
+
 ## Quickstart
 
 ```bash

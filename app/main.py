@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -16,7 +17,25 @@ from .optimizer import InfeasibleScenario
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("gridwise")
 
+class NormalizePathMiddleware:
+    """Tolerate sloppy base-URL joins: `//optimize-energy` and `/optimize-energy/` route like `/optimize-energy`
+    (instead of a 404, or a 307 redirect that many clients don't follow on POST)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = re.sub(r"/{2,}", "/", scope["path"])
+            if len(path) > 1:
+                path = path.rstrip("/")
+            if path != scope["path"]:
+                scope = dict(scope, path=path, raw_path=path.encode())
+        await self.app(scope, receive, send)
+
+
 app = FastAPI(title="GridWise LLM")
+app.add_middleware(NormalizePathMiddleware)
 _graph = None
 
 
